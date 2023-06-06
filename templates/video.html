@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Video editing</title>
+</head>
+<body>
+    {% if error %}
+    <p>{{ error | safe }}</p>
+    {% endif %}
+    <p>Video {{name}} ({{length}})</p>
+    <form method="POST" enctype="multipart/form-data" onsubmit="trackProgress()">
+        <label for="start">Start (s): </label><br>
+        <input type="text" id="start" name="start"><br>
+        <label for="end">End (s): </label><br>
+        <input type="text" id="end" name="end"><br>
+        <label for="extension">Recode to (extension): </label><br>
+        <input type="text" id="extension" name="extension"><br>
+        <label for="watermark">Watermark: </label><br>
+        <input type="file" id="watermark" name="watermark"><br>
+        <label for="email">Send result to email: </label><br>
+        <input type="email" id="email" name="email" required><br>
+        <button id="submit" type="submit">Submit</button>
+    </form>
+    <progress id="bar" value="0" max="100">0 %</progress>
+    <script>
+        function getProgress() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const id = urlParams.get('id');
+            const xhttp = new XMLHttpRequest();
+            xhttp.onload = function() {
+                document.getElementById("bar").value = this.responseText;
+            }
+            xhttp.open("GET", "/progress?id=" + id, true);
+            xhttp.send();
+        }
+
+        function trackProgress() {
+            window.setInterval(() => {
+                getProgress();
+            }, 1000);
+        }
+    </script>
+
+</body>
+</html>

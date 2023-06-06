@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Video upload</title>
+</head>
+<body>
+    {% if error %}
+    <p>{{ error | safe }}</p>
+    {% endif %}
+    <form method="POST" enctype="multipart/form-data">
+        <label for="video">Video: </label><br>
+        <input type="file" id="video" name="video" required><br>
+        <button id="submit" type="submit">Submit</button>
+    </form>
+</body>
+    </p>
+</html>
