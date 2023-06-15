@@ -129,3 +129,12 @@ dmypy.json
 .pyre/
 
 config.ini
+videos/
+*.mp4
+*.webm
+*.mkv
+*.avi
+*.ogv
+*.ogg
+*.mp3
+*.flac

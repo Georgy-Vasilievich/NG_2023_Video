@@ -10,11 +10,14 @@ import moviepy.editor as moviepy
 app = Flask(__name__)
 
 ALLOWED_UPLOAD_EXTENSIONS = {'mp4', 'webm', 'mkv', 'avi', 'ogv'}
-ALLOWED_CONVERT_EXTENSIONS = {'mp4', 'webm', 'mkv', 'avi', 'ogv', 'ogg', 'mp3', 'flac'}
+ALLOWED_CONVERT_EXTENSIONS = {'mp4', 'webm',
+                              'mkv', 'avi', 'ogv', 'ogg', 'mp3', 'flac'}
 AUDIO_EXTENSIONS = {'ogg', 'mp3', 'flac'}
-ALLOWED_WATERMARK_EXTENSIONS = {'bmp', 'png', 'jpg', 'jpeg', 'tiff', 'tga', 'svg'}
+ALLOWED_WATERMARK_EXTENSIONS = {
+    'bmp', 'png', 'jpg', 'jpeg', 'tiff', 'tga', 'svg'}
 
 percentages = {}
+
 
 class BarLogger(ProgressBarLogger):
     global percentages
@@ -27,11 +30,13 @@ class BarLogger(ProgressBarLogger):
         super(self.__class__, self).__init__()
         self.id = id
 
+
 def is_integer(n):
     try:
         return float(n).is_integer()
     except ValueError:
         return False
+
 
 def getExtension(filename, isWatermark=False):
     if not '.' in filename:
@@ -43,6 +48,7 @@ def getExtension(filename, isWatermark=False):
         return extension
     else:
         return False
+
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -59,12 +65,15 @@ def index():
 
     return render_template('index.html')
 
+
 @app.route('/video', methods=['GET', 'POST'])
 def video():
     error = ''
     changed = False
     audio = None
     id = request.args.get('id')
+    if id == None:
+        abort(400)
     path = os.path.join('videos', id)
     if id != None and os.path.isfile(path):
         clip = moviepy.VideoFileClip(path)
@@ -101,20 +110,23 @@ def video():
                     else:
                         watermarkExtension = getExtension(file.filename, True)
                         if watermarkExtension:
-                            watermarkPath = os.path.join('videos', id + '-watermark' + '.' + watermarkExtension)
+                            watermarkPath = os.path.join(
+                                'videos', id + '-watermark' + '.' + watermarkExtension)
                             file.save(watermarkPath)
 
                             formatter = {'PNG': 'RGBA', 'JPEG': 'RGB'}
                             img = Image.open(watermarkPath)
-                            rgbimg = Image.new(formatter.get(img.format, 'RGB'), img.size)
+                            rgbimg = Image.new(formatter.get(
+                                img.format, 'RGB'), img.size)
                             rgbimg.paste(img)
                             rgbimg.save(watermarkPath, format=img.format)
 
                             watermark = (moviepy.ImageClip(watermarkPath)
-                                .set_duration(clip.duration)
-                                .set_pos(('right', 'bottom')))
+                                         .set_duration(clip.duration)
+                                         .set_pos(('right', 'bottom')))
 
-                            clip = moviepy.CompositeVideoClip([clip, watermark])
+                            clip = moviepy.CompositeVideoClip(
+                                [clip, watermark])
                             os.remove(watermarkPath)
                             changed = True
                         else:
@@ -133,9 +145,10 @@ def video():
                 os.remove(path)
                 return render_template('success.html', error=error)
 
-        return render_template('video.html', id=id, length=int(clip.duration), error=error)
+        return render_template('video.html', length=int(clip.duration), error=error)
     else:
         abort(404)
+
 
 @app.route('/progress', methods=['GET'])
 def progress():
@@ -145,6 +158,7 @@ def progress():
         return str(percentage)
     else:
         abort(404)
+
 
 if __name__ == '__main__':
     if not os.path.isdir('videos'):

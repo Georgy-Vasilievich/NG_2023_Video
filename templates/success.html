@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <title>Video upload</title>
 </head>
+
 <body>
     <p>The modified video was sent to your email address. You can upload another one if you want to.</p>
     {% if error %}
     <p>The following errors occurred:<br>
-    {{ error | safe }}</p>
+        {{ error | safe }}</p>
     {% endif %}
     <p><a href="index.html">Upload another video</a></p>
 </body>
-    </p>
+
 </html>
