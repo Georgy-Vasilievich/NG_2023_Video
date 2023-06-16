@@ -54,14 +54,14 @@ def getExtension(filename, isWatermark=False):
 def index():
     if request.method == 'POST' and 'video' in request.files:
         file = request.files['video']
-        if not file.filename == '':
+        if file.filename:
             extension = getExtension(file.filename)
-            if extension != False:
+            if extension:
                 filename = str(uuid.uuid4()) + '.' + extension
                 file.save(os.path.join('videos', filename))
                 return redirect(url_for('video', id=filename))
-        else:
-            return render_template('index.html', error='Non-allowed file extension.')
+            else:
+                return render_template('index.html', error='Non-allowed file extension.')
 
     return render_template('index.html')
 
@@ -75,7 +75,7 @@ def video():
     if id == None:
         abort(400)
     path = os.path.join('videos', id)
-    if id != None and os.path.isfile(path):
+    if os.path.isfile(path):
         clip = moviepy.VideoFileClip(path)
         if request.method == 'POST':
             start = request.form.get('start')
@@ -91,6 +91,8 @@ def video():
                     else:
                         clip = clip.subclip(start, end)
                         changed = True
+                else:
+                    error += 'Invalid start or end times.<br>'
             if extension:
                 if extension in ALLOWED_CONVERT_EXTENSIONS:
                     if extension in AUDIO_EXTENSIONS:
@@ -104,7 +106,7 @@ def video():
                     error += 'Requested recode extension not allowed.<br>'
             if 'watermark' in request.files:
                 file = request.files['watermark']
-                if not file.filename == '':
+                if file.filename:
                     if audio:
                         error += 'Audio cannot be watermarked.<br>'
                     else:
