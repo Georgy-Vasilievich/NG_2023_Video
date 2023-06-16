@@ -1,5 +1,4 @@
 import configparser
-import email
 import os
 import smtplib
 import ssl
