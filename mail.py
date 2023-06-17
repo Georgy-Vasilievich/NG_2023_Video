@@ -38,7 +38,7 @@ def send_email(destination, attachment):
     # Add header as key/value pair to attachment part
     part.add_header(
         'Content-Disposition',
-        f'attachment; filename= {os.path.normpath(attachment)}',
+        f'attachment; filename= {os.path.basename(attachment)}',
     )
 
     # Add attachment to message and convert message to string

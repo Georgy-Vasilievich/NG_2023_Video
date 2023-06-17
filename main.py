@@ -76,78 +76,83 @@ def video():
         abort(400)
     path = os.path.join('videos', id)
     if os.path.isfile(path):
-        clip = moviepy.VideoFileClip(path)
-        if request.method == 'POST':
-            start = request.form.get('start')
-            end = request.form.get('end')
-            extension = request.form.get('extension')
-            email = request.form.get('email')
-            if not email:
-                abort(400)
-            if start and end:
-                if is_integer(start) and is_integer(end) and int(start) < int(end):
-                    if int(start) < 0 or int(end) > clip.duration:
-                        error += 'Selected subclip out of bounds.<br>'
-                    else:
-                        clip = clip.subclip(start, end)
-                        changed = True
-                else:
-                    error += 'Invalid start or end times.<br>'
-            if extension:
-                if extension in ALLOWED_CONVERT_EXTENSIONS:
-                    if extension in AUDIO_EXTENSIONS:
-                        audio = clip.audio
-                    newId = id.rsplit('.', 1)[0] + '.' + extension
-                    if id == newId:
-                        error += 'A different extension than the currently used one is needed.<br>'
-                    else:
-                        changed = True
-                else:
-                    error += 'Requested recode extension not allowed.<br>'
-            if 'watermark' in request.files:
-                file = request.files['watermark']
-                if file.filename:
-                    if audio:
-                        error += 'Audio cannot be watermarked.<br>'
-                    else:
-                        watermarkExtension = getExtension(file.filename, True)
-                        if watermarkExtension:
-                            watermarkPath = os.path.join(
-                                'videos', id + '-watermark' + '.' + watermarkExtension)
-                            file.save(watermarkPath)
-
-                            formatter = {'PNG': 'RGBA', 'JPEG': 'RGB'}
-                            img = Image.open(watermarkPath)
-                            rgbimg = Image.new(formatter.get(
-                                img.format, 'RGB'), img.size)
-                            rgbimg.paste(img)
-                            rgbimg.save(watermarkPath, format=img.format)
-
-                            watermark = (moviepy.ImageClip(watermarkPath)
-                                         .set_duration(clip.duration)
-                                         .set_pos(('right', 'bottom')))
-
-                            clip = moviepy.CompositeVideoClip(
-                                [clip, watermark])
-                            os.remove(watermarkPath)
-                            changed = True
+        with moviepy.VideoFileClip(path) as clip:
+            length = int(clip.duration)
+            if request.method == 'POST':
+                start = request.form.get('start')
+                end = request.form.get('end')
+                extension = request.form.get('extension')
+                email = request.form.get('email')
+                if not email:
+                    abort(400)
+                if start and end:
+                    if is_integer(start) and is_integer(end) and int(start) < int(end):
+                        if int(start) < 0 or int(end) > clip.duration:
+                            error += 'Selected subclip out of bounds.<br>'
                         else:
-                            error += 'Non-allowed watermark extension.<br>'
-            if changed:
-                logger = BarLogger(id)
-                if 'newId' in locals():
-                    os.remove(path)
-                    id = newId
-                    path = os.path.join('videos', id)
-                if audio:
-                    audio.write_audiofile(path, logger=logger)
-                else:
-                    clip.write_videofile(path, logger=logger)
-                send_email(email, path)
-                os.remove(path)
-                return render_template('success.html', error=error)
+                            clip = clip.subclip(start, end)
+                            changed = True
+                    else:
+                        error += 'Invalid start or end times.<br>'
+                if extension:
+                    if extension in ALLOWED_CONVERT_EXTENSIONS:
+                        if extension in AUDIO_EXTENSIONS:
+                            audio = clip.audio
+                        newId = id.rsplit('.', 1)[0] + '.' + extension
+                        if id == newId:
+                            error += 'A different extension than the currently used one is needed.<br>'
+                        else:
+                            changed = True
+                    else:
+                        error += 'Requested recode extension not allowed.<br>'
+                if 'watermark' in request.files:
+                    file = request.files['watermark']
+                    if file.filename:
+                        if audio:
+                            error += 'Audio cannot be watermarked.<br>'
+                        else:
+                            watermarkExtension = getExtension(file.filename, True)
+                            if watermarkExtension:
+                                watermarkPath = os.path.join(
+                                    'videos', id + '-watermark' + '.' + watermarkExtension)
+                                file.save(watermarkPath)
 
-        return render_template('video.html', length=int(clip.duration), error=error)
+                                formatter = {'PNG': 'RGBA', 'JPEG': 'RGB'}
+                                with Image.open(watermarkPath) as img:
+                                    rgbimg = Image.new(formatter.get(
+                                        img.format, 'RGB'), img.size)
+                                    rgbimg.paste(img)
+                                    rgbimg.save(watermarkPath, format=img.format)
+
+                                watermark = (moviepy.ImageClip(watermarkPath)
+                                             .set_duration(clip.duration)
+                                             .set_pos(('right', 'bottom')))
+
+                                clip = moviepy.CompositeVideoClip(
+                                    [clip, watermark])
+                                os.remove(watermarkPath)
+                                changed = True
+                            else:
+                                error += 'Non-allowed watermark extension.<br>'
+                if changed:
+                    logger = BarLogger(id)
+                    if 'newId' in locals():
+                        oldPath = path
+                        path = os.path.join('videos', newId)
+                    if audio:
+                        audio.write_audiofile(path, logger=logger)
+                        audio.close()
+                    else:
+                        clip.write_videofile(path, logger=logger)
+                    clip.close()
+                    send_email(email, path)
+        if changed:    
+            if 'oldPath' in locals():
+                os.remove(oldPath)
+            os.remove(path)
+            return render_template('success.html', error=error)
+
+        return render_template('video.html', length=length, error=error)
     else:
         abort(404)
 
